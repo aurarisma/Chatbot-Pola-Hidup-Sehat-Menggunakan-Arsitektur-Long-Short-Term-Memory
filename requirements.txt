@@ -5,5 +5,5 @@ scikit-learn
 joblib
 plotly
 openpyxl
-tensorflow-cpu==2.15
+tensorflow-cpu==2.21.0
 h5py
