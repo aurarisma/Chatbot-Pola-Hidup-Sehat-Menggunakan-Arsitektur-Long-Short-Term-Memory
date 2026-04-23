@@ -1,9 +1,8 @@
 import streamlit as st
-import numpy as np
+import pandas as pd
 import pickle
 import re
 import time
-import pandas as pd
 from difflib import get_close_matches
 
 # ================================
@@ -16,33 +15,38 @@ st.set_page_config(
 )
 
 # ================================
-# LOAD DATA (AMAN TANPA TENSORFLOW)
+# LOAD DATA (AMAN)
 # ================================
 @st.cache_resource
 def load_all():
-    try:
-        tokenizer = pickle.load(open("tokenizer.pkl", "rb"))
-        label_encoder = pickle.load(open("label_encoder.pkl", "rb"))
-        responses = pickle.load(open("responses.pkl", "rb"))
+    qa_pairs = {}
 
+    # Load dataset Excel
+    try:
         df = pd.read_excel("DATASET_PHS.xlsx")
         df.columns = df.columns.str.strip().str.lower()
-        qa_pairs = dict(zip(df["pertanyaan"], df["jawaban"]))
 
-        return tokenizer, label_encoder, responses, qa_pairs
+        if "pertanyaan" in df.columns and "jawaban" in df.columns:
+            qa_pairs = dict(zip(df["pertanyaan"], df["jawaban"]))
 
     except Exception as e:
-        st.error(f"Error load data: {e}")
-        return None, None, None, {
+        st.warning(f"Gagal load dataset Excel: {e}")
+
+    # Fallback jika kosong
+    if not qa_pairs:
+        qa_pairs = {
             "demam": "Istirahat yang cukup dan perbanyak minum air putih.",
             "batuk": "Minum air hangat dan hindari makanan berminyak.",
-            "pusing": "Istirahat dan kurangi aktivitas berat."
+            "pusing": "Istirahat dan kurangi aktivitas berat.",
+            "flu": "Perbanyak istirahat dan konsumsi vitamin C."
         }
 
-tokenizer, label_encoder, responses, qa_pairs = load_all()
+    return qa_pairs
+
+qa_pairs = load_all()
 
 # ================================
-# SESSION
+# SESSION STATE
 # ================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -60,11 +64,11 @@ def get_response(user_input):
     text = clean_text(user_input)
     nama = st.session_state.patient["nama"] or "Pasien"
 
-    # exact match
+    # Exact match
     if text in qa_pairs:
         return f"Halo **{nama}**, {qa_pairs[text]}"
 
-    # fuzzy match
+    # Fuzzy match
     match = get_close_matches(text, qa_pairs.keys(), n=1, cutoff=0.6)
     if match:
         return f"Halo **{nama}**, {qa_pairs[match[0]]}"
@@ -97,19 +101,25 @@ with st.sidebar:
         else:
             st.error("Input tidak valid")
 
-    if st.button("Hapus Chat"):
+    st.markdown("---")
+
+    if st.button("🗑️ Hapus Chat"):
         st.session_state.messages = []
         st.rerun()
 
 # ================================
-# CHAT
+# CHAT DISPLAY
 # ================================
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.chat_message("user").write(msg["content"])
-    else:
-        st.chat_message("assistant").write(msg["content"])
+if not st.session_state.messages:
+    st.info("💬 Silakan mulai bertanya tentang kesehatan...")
 
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+# ================================
+# INPUT CHAT
+# ================================
 if prompt := st.chat_input("Ketik pertanyaan..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
