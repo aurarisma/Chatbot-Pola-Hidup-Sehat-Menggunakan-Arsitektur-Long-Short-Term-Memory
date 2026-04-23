@@ -6,8 +6,6 @@ import random
 import time
 import pandas as pd
 from difflib import get_close_matches
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 # ============================
 # SAFE IMPORT (ANTI CRASH)
@@ -22,7 +20,6 @@ except:
 # LOAD MODEL
 # ============================
 if TF_AVAILABLE:
-    model = load_model("chatbot_model.h5")
 else:
     st.error("TensorFlow tidak tersedia, aplikasi tidak bisa menjalankan model.")
     model = None
