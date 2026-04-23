@@ -20,8 +20,8 @@ except:
 # LOAD MODEL
 # ============================
 if TF_AVAILABLE:
+    model = load_model("chatbot_model.h5")
 else:
-    st.error("TensorFlow tidak tersedia, aplikasi tidak bisa menjalankan model.")
     model = None
     
 # ================================
